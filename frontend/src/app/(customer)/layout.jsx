@@ -2,6 +2,8 @@ import React from "react";
 import NavBar from "../components/nav-bar";
 import Footer from "@/app/components/footer";
 
+export const dynamic = "force-dynamic";
+
 export default function CustomerLayout({ children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
