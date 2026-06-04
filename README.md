@@ -273,21 +273,69 @@ TeamProject07/
 
 ---
 
-## Getting Started
+## Live Demo
 
-### Backend
+The full application is deployed and publicly accessible — no setup required.
 
-Requires Java 17, Maven, and a PostgreSQL instance.
+**Try it now:** https://restaurant-website-team-project-d3owupfx0.vercel.app/
 
-```bash
-cd backend
-mvn clean install
-mvn spring-boot:run
+| Layer | Hosting |
+|---|---|
+| Frontend (Next.js) | Vercel |
+| Backend API (Spring Boot) | Render |
+| Database (PostgreSQL) | Neon — `eu-west-2` |
+
+> The backend runs on a free hosting tier and sleeps after ~15 minutes of inactivity. The first request after a cold start may take 30–60 seconds while the server wakes up — subsequent requests respond instantly.
+
+### Demo Accounts
+
+Six pre-seeded accounts are available so every feature can be evaluated end-to-end. The password for all of them is `123`.
+
+| Username | Role | Use this account to demo |
+|---|---|---|
+| `Krish` | Customer | Menu browsing, sort filters, allergen popups, basket, checkout, live order tracking, call-waiter |
+| `Malcolm` | Customer | Second customer for multi-user scenarios |
+| `Parvesh` | Waiter | Waiter dashboard, incoming waiter-call notifications, table management |
+| `Ahmed` | Waiter | Second waiter account |
+| `Luque` | Chef | Kitchen dashboard, change order status (Cooking → Done), full menu CRUD |
+| `Philip` | Chef | Second chef account |
+
+You can also create a new account via **Sign Up** — new sign-ups default to the Customer role.
+
+### Suggested Walkthrough
+
+Open two browser windows (one regular, one incognito) to see customer ↔ staff interaction in real time:
+
+1. **As a Customer** (`Krish` / `123`) — browse the menu, sort by price, view allergen info, add items to basket, and checkout
+2. **Visit "My Orders"** — the new order appears with its live progress bar in *Cooking*
+3. **Click "Call Waiter"** from the menu page — a notification is queued for staff
+4. **In the second window, log in as a Waiter** (`Parvesh` / `123`) — the call appears on the dashboard; tables can be managed
+5. **Log in as a Chef** (`Luque` / `123`) — open the order management view and change the order's status from *Cooking* to *Done*; menu items can also be added, edited, or removed
+6. **Back in the customer window**, refresh "My Orders" — the progress bar now shows *Done*
+
+---
+
+## How to Self-Host
+
+Prefer running the project on your own machine? The backend and frontend boot independently.
+
+### Prerequisites
+
+- **Java 17** and **Maven** — for the Spring Boot backend
+- **Node.js 18+** and **npm** — for the Next.js frontend
+- **PostgreSQL** — running locally on port `5432`
+
+### 1. Database
+
+Create a PostgreSQL database called `restaurant`:
+
+```sql
+CREATE DATABASE restaurant;
 ```
 
-The API runs on `http://localhost:8080` by default.
+### 2. Backend (Spring Boot — port 8080)
 
-Before running, update `src/main/resources/application.properties` with your local PostgreSQL credentials:
+Update `backend/src/main/resources/application.properties` with your PostgreSQL credentials:
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/restaurant
@@ -295,11 +343,19 @@ spring.datasource.username=postgres
 spring.datasource.password=your_password_here
 ```
 
-You will also need to create the `restaurant` database in PostgreSQL before starting the app.
+Then build and run:
 
-### Frontend
+```bash
+cd backend
+mvn clean install
+mvn spring-boot:run
+```
 
-Requires Node.js 18+.
+The API is now available at **http://localhost:8080**.
+
+### 3. Frontend (Next.js — port 3000)
+
+In a separate terminal:
 
 ```bash
 cd frontend
@@ -307,7 +363,13 @@ npm install
 npm run dev
 ```
 
-The frontend runs on `http://localhost:3000`. Ensure the Spring Boot backend is also running on `http://localhost:8080` as the frontend makes API calls directly to it.
+The app is now available at **http://localhost:3000**, talking to the backend at `http://localhost:8080`.
+
+### Verifying
+
+- Open `http://localhost:3000` — the homepage should load
+- The menu page should populate from the backend
+- Sign in with one of the [demo accounts](#demo-accounts) above (they are seeded automatically on first backend startup)
 
 ---
 
