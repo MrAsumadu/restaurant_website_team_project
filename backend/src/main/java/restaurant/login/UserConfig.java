@@ -16,6 +16,9 @@ public class UserConfig {
   @Bean
   CommandLineRunner commandLineRunner(UserRepository repository) {
     return args -> {
+      if (repository.count() > 0) {
+        return;
+      }
       User krish = new User("Krish", "123", "Customer");
       User luque = new User("Luque", "123", "Chef");
       User malcolm = new User("Malcolm", "123", "Customer");
