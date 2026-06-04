@@ -20,7 +20,8 @@ function SignUpPage() {
 
   const handleSignUpSubmit = async (data) => {
     const { username, password } = data;
-    const res = await fetch("http://localhost:8080/user/register", {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+    const res = await fetch(`${apiBase}/user/register`, {
       method: "POST",
       body: JSON.stringify({
         username,
