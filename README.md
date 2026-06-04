@@ -40,7 +40,7 @@ The application separates the customer-facing storefront from the staff dashboar
 - **Waiter notifications** — customers can call a waiter from their table; the notification is pushed to the waiter dashboard
 - **Allergen and calorie information** — dedicated popups with dietary information for each menu item
 - **Payment processing** — checkout flow with order summary and payment handling
-- **JWT authentication** — secure login/signup with role-based access control and persistent session via `localStorage`
+- **Role-based login** — login and signup with the user's role returned from the backend and used to render role-specific UI; the signed-in user persists across reloads via `localStorage`
 - **Guest ordering** — customers can browse and order without creating an account
 
 ---
@@ -53,7 +53,7 @@ The application separates the customer-facing storefront from the staff dashboar
 | **Animations / UI** | react-awesome-reveal, react-slick, react-scroll, lucide-react |
 | **Backend** | Spring Boot 3.2.2, Java 17, Spring Data JPA, Lombok |
 | **Database** | PostgreSQL (production), H2 in-memory (tests) |
-| **Authentication** | JWT (`jjwt 0.11.5`), role-based access control |
+| **Authentication** | Username/password login; user role returned from the backend to drive client-side role-based UI |
 | **Build / CI** | Maven, GitLab CI/CD (4-stage pipeline) |
 | **Code Quality** | Google+ Checkstyle via `maven-checkstyle-plugin` |
 | **Testing** | JUnit 5, Mockito |
@@ -62,7 +62,7 @@ The application separates the customer-facing storefront from the staff dashboar
 
 ## My Contributions
 
-> I worked as a full-stack contributor across the Spring Boot backend and the Next.js frontend. I completed and finalized the waiter notification module, extended the menu management UI and backend, added status management and order actions to the team's kitchen staff dashboard, built the customer menu filtering experience, wired role-based UI rendering from backend to frontend, and wrote a global CORS filter to unblock frontend–backend integration.
+> I worked as a full-stack contributor across the Spring Boot backend and the Next.js frontend. I completed and finalized the waiter notification module, extended the menu management UI and backend, added status management and order actions to the team's kitchen staff dashboard, built the customer menu filtering experience, and wired role-based UI rendering from backend to frontend.
 
 ---
 
@@ -110,12 +110,12 @@ When a customer triggers a "call waiter" action, a notification is persisted and
 
 The order dashboard was a team effort: Parvesh Kumar created `admin-orders/page.jsx` and Ahmed Alyami implemented the foundational table structure, tabs, and action buttons in `admin-orders/order-list.jsx`. I then added the status-change functionality, order removal capability, and fixed several integration bugs across the stack.
 
-- **Backend** — implemented `updateOrderStatus` in the service layer using `@Transactional`. The method fetches the order by ID, converts the incoming string to an `OrderStatus` enum value via `convertFromString`, sets it on the entity, and saves. Added the `PUT /{orderId}` endpoint routing in `ItemController.java` to expose this functionality. Fixed a bug where `username` was arriving as `null` on orders posted from the frontend.
+- **Backend** — added the order status-update path: the `PUT /{orderId}` routing in `ItemController.java` plus an initial `@Transactional` status change in the service layer (fetch the order by ID, convert the incoming string to an `OrderStatus` value, set it, and save). The final `updateOrderStatus` / `convertFromString` form was finished together with Ahmed and Parvesh. Separately, fixed a bug where `username` was arriving as `null` on orders posted from the frontend.
 - **Frontend** — extended the `admin-orders` order management view:
   - Added a status dropdown to change any order's status and a DELETE button with `handleDeleteOrder` to remove orders from the dashboard.
   - Fixed an ID display bug where all orders were rendering as ID `1` due to an incorrect field mapping.
   - Fixed table alignment issues in the order list.
-- **Access control** — enforced that the dashboard routes are only accessible to users with the Waiter or Chef role, redirecting all others.
+- **Role-based dashboard access** — added a role check so the dashboard entry point (the "Go to dashboard" button in `auth-button.jsx` and the navbar's Dashboard link) renders only for the Waiter and Chef roles, using the role returned from login; customers see the customer UI instead.
 
 ---
 
@@ -164,12 +164,10 @@ Fixed a logical operator bug (`||` instead of `&&`) in the role condition that w
 
 Beyond the features above, I made several contributions across the stack that were necessary for end-to-end integration:
 
-- **`SimpleCorsFilter.java`** — wrote a global servlet `Filter` registered at `Ordered.HIGHEST_PRECEDENCE` to handle CORS preflight (`OPTIONS`) requests. Sets `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`, and `Access-Control-Expose-Headers` globally, and returns `HTTP 200` for all `OPTIONS` requests before they reach any controller. This unblocked all frontend-to-backend communication during development.
 - **`UserController.java` / `UserService.java`** — modified the `loginUser` endpoint to return the full `User` object (including `role`) in the response body, enabling the frontend to implement role-based UI rendering.
 - **`ItemController.java`** — added the `PUT /{orderId}` endpoint to route order status-update requests from the frontend to the service layer.
 - **`providers/auth.jsx`** — updated the `AuthContext` provider to store the user's role from the login response, making it accessible to any component in the app via `useContext`.
 - **`basket/page.jsx`** — fixed a bug where the username was not being included in order POST requests, causing `null` username values in the database.
-- **Auth page restructuring** — reorganised the login and signup pages into a `(auth)` route group for cleaner Next.js routing.
 
 ---
 
@@ -186,9 +184,6 @@ The frontend sends status values as plain strings (e.g. `"cooking"`), but the ba
 
 **Role-based UI rendering**
 After propagating the user role into the `AuthContext`, the conditional rendering logic required precision. A single wrong operator (`||` instead of `&&`) caused the "Change Menu" button to appear for the wrong users. I identified the root cause and fixed it.
-
-**Cross-origin request handling**
-During frontend–backend integration, the Next.js dev server on port 3000 could not reach the Spring Boot API on port 8080 due to browser CORS enforcement. Rather than scattering `@CrossOrigin` annotations on every controller, I wrote a global `SimpleCorsFilter` registered at `Ordered.HIGHEST_PRECEDENCE` that intercepts all preflight `OPTIONS` requests and sets the correct `Access-Control-Allow-*` headers. This removed CORS as a blocker for the entire team.
 
 ---
 
@@ -245,8 +240,8 @@ TeamProject07/
 ├── backend/                          Spring Boot REST API
 │   └── src/
 │       ├── main/java/restaurant/
-│       │   ├── SimpleCorsFilter.java     Global CORS filter            ← my contribution
-│       │   ├── login/                    User entity, JWT auth
+│       │   ├── SimpleCorsFilter.java     Global CORS filter
+│       │   ├── login/                    User entity, username/password auth
 │       │   ├── menu/                     Food entity, menu CRUD        ← co-authored / extended
 │       │   ├── order/                    Item entity, order management  ← added status endpoint
 │       │   ├── table/                    Table reservation system
@@ -261,7 +256,7 @@ TeamProject07/
         │   ├── basket/                   Cart and checkout              ← fixed username bug
         │   ├── myorders/                 Order tracking with progress bar
         │   ├── table/                    Table reservation
-        │   └── (auth)/login|signup       Authentication pages           ← restructured
+        │   └── (auth)/login|signup       Authentication pages
         ├── (admin)/                      Staff route group
         │   ├── dashboard/                Waiter and chef order dashboard
         │   ├── admin-kitchenstaff/       Kitchen staff order view
@@ -335,13 +330,15 @@ CREATE DATABASE restaurant;
 
 ### 2. Backend (Spring Boot — port 8080)
 
-Update `backend/src/main/resources/application.properties` with your PostgreSQL credentials:
+The backend reads its datasource settings from environment variables, falling back to local defaults in `backend/src/main/resources/application.properties`:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/restaurant
-spring.datasource.username=postgres
-spring.datasource.password=your_password_here
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/restaurant}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:postgres}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:}
 ```
+
+For local development, either set those environment variables or edit the fallback values inline (the text after each `:`) to match your PostgreSQL credentials.
 
 Then build and run:
 
